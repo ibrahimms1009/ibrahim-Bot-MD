@@ -11,43 +11,43 @@ global.botnumber = ""
 global.confirmCode = ""
 
 global.owner = [
-  ['5219992095479', '👑 Mystic - Creador 👑', true],
-  ['51940617554', '💫 Mystic - Collaborator 2 💫', true],
-  ['51996089079', '💫 Mystic - Collaborator 3 💫', true],
-  ['5218442286089', '💫 Mystic - Collaborator 4 💫', true],
-  ['50246028932', '💫 Mystic - Collaborator 5 💫', true],
-  ['5212412377467', '💫 Mystic - Collaborator 6 💫', true],
-  ['5215517489568', '💫 Mystic - Rey Endymion 💫', false],
-  ['59895555511', '💫 Mystic - Collaborator 8 💫', true],
-  ['59175655964', '💫 Mystic - By Alba070503 💫', true],
-  ['393518398856','💫 Mystic - Tester Fabri115💫', true],
-  ['593968585283'],
-  ['5492266466080'],
-  ['5218442114446'],
-  ['59894808483'],
-  ['593980586516'], 
-  ['595975740803'],  
-  ['5492266613038'],
-  ['50497150165'],
-  ['51906662557'],
-  ['573183650526'], 
-  ['5217441298510'], 
-  ['5217294888993'],
-  ['595992611272'],
-  ['5219992843892'],
+  ['212772575142', '👑 ibrahim - bot 👑', true],
+  ['212703481047', '💫 ibrahim - Collaborator 2 💫', true],
+  ['212778214437', '💫 ibrahim - Collaborator 3 💫', true],
+  ['212778214437', '💫 ibrahim - Collaborator 4 💫', true],
+  ['212778214437', '💫 ibrahim - Collaborator 5 💫', true],
+  ['212778214437', '💫 ibrahim - Collaborator 6 💫', true],
+  ['212772575142', '💫 ibrahim - Rey Endymion 💫', false],
+  ['212772575142', '💫 ibrahim - Collaborator 8 💫', true],
+  ['212772575142', '💫 ibrahim - By Alba070503 💫', true],
+  ['212772575142','💫 ibrahim - Tester Fabri115💫', true],
+  ['212772575142'],
+  ['212772575142'],
+  ['212772575142'],
+  ['212772575142'],
+  ['212772575142'], 
+  ['212772575142'],  
+  ['212703481047'],
+  ['212703481047'],
+  ['212703481047'],
+  ['212703481047'], 
+  ['212703481047'], 
+  ['212703481047'],
+  ['212703481047'],
+  ['212703481047'],
   ['5219991402134']
 ];
 
-global.suittag = ['5219993404349'];
-global.prems = ['51995386439'];
+global.suittag = ['212778214437'];
+global.prems = ['212778214437'];
 
 global.packname = 'Sticker';
-global.author = 'The Mystic - Bot';
-global.wm = 'The Mystic - Bot';
-global.titulowm = 'The Mystic - Bot';
-global.titulowm2 = `The Mystic - Bot`
-global.igfg = 'The Mystic - Bot';
-global.wait = '*[ ⏳ ] Cargando...*';
+global.author = 'ibrahim - Bot';
+global.wm = 'ibrahim - Bot';
+global.titulowm = 'ibrahim - Bot';
+global.titulowm2 = `ibrahim Bot`
+global.igfg = 'ibrahim - Bot';
+global.wait = '*[ ⏳ ] يتم التحميل...*';
 
 global.imagen1 = fs.readFileSync('./Menu2.jpg');
 global.imagen2 = fs.readFileSync('./src/nuevobot.jpg');
@@ -66,20 +66,20 @@ global.mods = [];
 global.d = new Date(new Date + 3600000);
 global.locale = 'es';
 global.dia = d.toLocaleDateString(locale, {weekday: 'long'});
-global.fecha = d.toLocaleDateString('es', {day: 'numeric', month: 'numeric', year: 'numeric'});
-global.mes = d.toLocaleDateString('es', {month: 'long'});
-global.año = d.toLocaleDateString('es', {year: 'numeric'});
+global.fecha = d.toLocaleDateString('ar', {day: 'numeric', month: 'numeric', year: 'numeric'});
+global.mes = d.toLocaleDateStringes('ar', {month: 'long'});
+global.año = d.toLocaleDateString('ar', {year: 'numeric'});
 global.tiempo = d.toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true});
 //* ****************************
-global.wm2 = `${dia} ${fecha}\nThe Mystic - Bot`;
-global.gt = 'The Mystic - Bot';
-global.mysticbot = 'The Mystic - Bot';
-global.md = 'https://github.com/BrunoSobrino/TheMystic-Bot-MD';
-global.mysticbot = 'https://github.com/BrunoSobrino/TheMystic-Bot-MD';
-global.waitt = '*[ ⏳ ] Cargando...*';
-global.waittt = '*[ ⏳ ] Cargando...*';
-global.waitttt = '*[ ⏳ ] Cargando...*';
-global.nomorown = '5219993404349';
+global.wm2 = `${dia} ${fecha}\nibrahim - Bot`;
+global.gt = 'ibrahim - Bot';
+global.mysticbot = 'ibrahim - Bot';
+global.md = 'instagram ibrahim_9zz__';
+global.mysticbot = 'instagram ibrahim_9zz__';
+global.waitt = '*[ ⏳ ] جاري التحميل...*';
+global.waittt = '*[ ⏳ ] جاري التحميل...*';
+global.waitttt = '*[ ⏳ ] جاري التحميل...*';
+global.nomorown = '212772575142';
 global.pdoc = ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/msword', 'application/pdf', 'text/rtf'];
 global.cmenut = '❖––––––『';
 global.cmenub = '┊✦ ';
