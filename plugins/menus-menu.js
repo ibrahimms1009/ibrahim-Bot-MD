@@ -1,774 +1,658 @@
-import fs from 'fs'
-import translate from '@vitalets/google-translate-api'
-import moment from 'moment-timezone'
-import ct from 'countries-and-timezones'
-import { parsePhoneNumber } from 'libphonenumber-js'
 import fetch from 'node-fetch'
-import { xpRange } from '../lib/levelling.js'
-const { levelling } = '../lib/levelling.js'
-import PhoneNumber from 'awesome-phonenumber'
-import { promises } from 'fs'
-import { join } from 'path'
-import chalk from 'chalk'
-
-let handler = async (m, { conn, usedPrefix, usedPrefix: _p, __dirname, text, command }) => {
-let chat = global.db.data.chats[m.chat]
-let user = global.db.data.users[m.sender]
-let bot = global.db.data.settings[conn.user.jid] || {}
-
-const commandsConfig = [
-{ comando: (bot.restrict ? 'off ' : 'on ') + 'restringir , restrict', descripcion: bot.restrict ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Permisos para el Bot', showPrefix: true },
-{ comando: (bot.antiCall ? 'off ' : 'on ') + 'antillamar , anticall', descripcion: bot.antiCall ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Evitar recibir llamadas en el Bot', showPrefix: true },
-{ comando: (bot.temporal ? 'off ' : 'on ') + 'temporal', descripcion: bot.temporal ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Ingreso del Bot temporalmente en grupos', showPrefix: true },
-{ comando: (bot.jadibotmd ? 'off ' : 'on ') + 'serbot , jadibot', descripcion: bot.jadibotmd ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Permitir o no Sub Bots en este Bot', showPrefix: true },
-{ comando: (bot.antiSpam ? 'off ' : 'on ') + 'antispam', descripcion: bot.antiSpam ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Dar advertencia por hacer Spam', showPrefix: true },
-{ comando: (bot.antiSpam2 ? 'off ' : 'on ') + 'antispam2', descripcion: bot.antiSpam2 ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Omitir resultado de comandos consecutivos', showPrefix: true },
-{ comando: (bot.antiPrivate ? 'off ' : 'on ') + 'antiprivado , antiprivate', descripcion: bot.antiPrivate ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Prohibe que este Bot sea usado en privado', showPrefix: true },
-{ comando: (global.opts['self'] ? 'on ' : 'off ') + 'publico , public', descripcion: global.opts['self'] ? '❌' + 'Desactivado || Disabled' : '✅' + 'Activado || Activated', contexto: 'Permitir que todos usen el Bot', showPrefix: true },
-{ comando: (global.opts['autoread'] ? 'off ' : 'on ') + 'autovisto , autoread', descripcion: global.opts['autoread'] ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Mensajes leídos automáticamente', showPrefix: true },
-{ comando: (global.opts['gconly'] ? 'off ' : 'on ') + 'sologrupos , gconly', descripcion: global.opts['gconly'] ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Hacer que funcione sólo en grupos', showPrefix: true },
-{ comando: (global.opts['pconly'] ? 'off ' : 'on ') + 'soloprivados , pconly', descripcion: global.opts['pconly'] ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled', contexto: 'Hacer que funcione sólo al privado', showPrefix: true },
- 
-{ comando: m.isGroup ? (chat.welcome ? 'off ' : 'on ') + 'bienvenida , welcome' : false, descripcion: m.isGroup ? (chat.welcome ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Establecer bienvenida en grupos', showPrefix: true },
-{ comando: m.isGroup ? (chat.detect  ? 'off ' : 'on ') + 'avisos , detect' : false, descripcion: m.isGroup ? (chat.detect  ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Avisos importantes en grupos', showPrefix: true },
-{ comando: m.isGroup ? (chat.autolevelup  ? 'off ' : 'on ') + 'autonivel , autolevelup' : false, descripcion: m.isGroup ? (chat.autolevelup  ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Subir de nivel automáticamente', showPrefix: true },
-{ comando: m.isGroup ? (chat.modoadmin  ? 'off ' : 'on ') + 'modoadmin , modeadmin' : false, descripcion: m.isGroup ? (chat.modoadmin  ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Sólo admins podrán usar en grupo', showPrefix: true },
-
-{ comando: m.isGroup ? (chat.stickers ? 'off ' : 'on ') + 'stickers' : false, descripcion: m.isGroup ? (chat.stickers ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Stickers automáticos en chats', showPrefix: true }, 
-{ comando: m.isGroup ? (chat.autosticker ? 'off ' : 'on ') + 'autosticker' : false, descripcion: m.isGroup ? (chat.autosticker ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Multimedia a stickers automáticamente', showPrefix: true }, 
-{ comando: m.isGroup ? (chat.reaction ? 'off ' : 'on ') + 'reacciones , reaction' : false, descripcion: m.isGroup ? (chat.reaction ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Reaccionar a mensajes automáticamente', showPrefix: true }, 
-{ comando: m.isGroup ? (chat.audios ? 'off ' : 'on ') + 'audios' : false, descripcion: m.isGroup ? (chat.audios ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Audios automáticos en chats', showPrefix: true }, 
-{ comando: m.isGroup ? (chat.modohorny ? 'off ' : 'on ') + 'modocaliente , modehorny' : false, descripcion: m.isGroup ? (chat.modohorny ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Comandos con contenido para adultos', showPrefix: true }, 
-{ comando: m.isGroup ? (chat.antitoxic ? 'off ' : 'on ') + 'antitoxicos , antitoxic' : false, descripcion: m.isGroup ? (chat.antitoxic ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Sancionar/eliminar a usuarios tóxicos', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiver ? 'off ' : 'on ') + 'antiver , antiviewonce' : false, descripcion: m.isGroup ? (chat.antiver ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: ' No acultar mensajes de \"una sola vez\"', showPrefix: true }, 
-{ comando: m.isGroup ? (chat.delete ? 'off ' : 'on ') + 'antieliminar , antidelete' : false, descripcion: m.isGroup ? (chat.delete ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Mostrar mensajes eliminados', showPrefix: true },
-{ comando: m.isGroup ? (chat.antifake ? 'off ' : 'on ') + 'antifalsos , antifake' : false, descripcion: m.isGroup ? (chat.antifake ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar usuarios falsos/extranjeros', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiTraba ? 'off ' : 'on ') + 'antitrabas , antilag' : false, descripcion: m.isGroup ? (chat.antiTraba ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Enviar mensaje automático en caso de lag', showPrefix: true },
-{ comando: m.isGroup ? (chat.simi ? 'off ' : 'on ') + 'simi' : false, descripcion: m.isGroup ? (chat.simi ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'SimSimi responderá automáticamente', showPrefix: true },
-{ comando: m.isGroup ? (chat.modoia ? 'off ' : 'on ') + 'ia' : false, descripcion: m.isGroup ? (chat.modoia ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Inteligencia artificial automática', showPrefix: true },
-
-{ comando: m.isGroup ? (chat.antilink ? 'off ' : 'on ') + 'antienlace , antilink' : false, descripcion: m.isGroup ? (chat.antilink ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de WhatsApp', showPrefix: true },
-{ comando: m.isGroup ? (chat.antilink2 ? 'off ' : 'on ') + 'antienlace2 , antilink2' : false, descripcion: m.isGroup ? (chat.antilink2 ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces que contenga \"https\"', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiTiktok ? 'off ' : 'on ') + 'antitiktok , antitk' : false, descripcion: m.isGroup ? (chat.antiTiktok ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de TikTok', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiYoutube ? 'off ' : 'on ') + 'antiyoutube , antiyt' : false, descripcion: m.isGroup ? (chat.antiYoutube ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de YouTube', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiTelegram ? 'off ' : 'on ') + 'antitelegram , antitg' : false, descripcion: m.isGroup ? (chat.antiTelegram ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de Telegram', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiFacebook ? 'off ' : 'on ') + 'antifacebook , antifb' : false, descripcion: m.isGroup ? (chat.antiFacebook ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de Facebook', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiInstagram ? 'off ' : 'on ') + 'antinstagram , antig' : false, descripcion: m.isGroup ? (chat.antiInstagram ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de Instagram', showPrefix: true },
-{ comando: m.isGroup ? (chat.antiTwitter ? 'off ' : 'on ') + 'antiX' : false, descripcion: m.isGroup ? (chat.antiTwitter ? '✅ ' + 'Activado || Activated' : '❌ ' + 'Desactivado || Disabled') : false, contexto: 'Eliminar enlaces de X (Twitter)', showPrefix: true },
-]
- 
+let handler = async (m, { conn, usedPrefix, usedPrefix: _p, __dirname, text, isPrems }) => {
 try {
-let _package = JSON.parse(await promises.readFile(join(__dirname, '../package.json')).catch(_ => ({}))) || {}
-let { exp, limit, level, role } = global.db.data.users[m.sender]
-let { min, xp, max } = xpRange(level, global.multiplier)
-let name = await conn.getName(m.sender)
+let pp = imagen4
+//let vn = './media/menu.mp3'
+let img = await(await fetch('https://i.imgur.com/JP52fdP.jpg')).buffer()
 let d = new Date(new Date + 3600000)
 let locale = 'es'
-let weton = ['Pahing', 'Pon', 'Wage', 'Kliwon', 'Legi'][Math.floor(d / 84600000) % 5]
 let week = d.toLocaleDateString(locale, { weekday: 'long' })
-let date = d.toLocaleDateString(locale, {
-day: 'numeric',
-month: 'long',
-year: 'numeric'
-})
-let dateIslamic = Intl.DateTimeFormat(locale + '-TN-u-ca-islamic', {
-day: 'numeric',
-month: 'long',
-year: 'numeric'
-}).format(d)
-let time = d.toLocaleTimeString(locale, {
-hour: 'numeric',
-minute: 'numeric',
-second: 'numeric'
-})
+let date = d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
 let _uptime = process.uptime() * 1000
-let _muptime
-if (process.send) {
-process.send('uptime')
-_muptime = await new Promise(resolve => {
-process.once('message', resolve)
-setTimeout(resolve, 1000)
-}) * 1000
-}
-let { money, joincount } = global.db.data.users[m.sender]
-let muptime = clockString(_muptime)
 let uptime = clockString(_uptime)
-let totalreg = Object.keys(global.db.data.users).length
-let rtotalreg = Object.values(global.db.data.users).filter(user => user.registered == true).length
-let replace = {
-'%': '%',
-p: _p, uptime, muptime,
-me: conn.getName(conn.user.jid),
-npmname: _package.name,
-npmdesc: _package.description,
-version: _package.version,
-exp: exp - min,
-maxexp: xp,
-totalexp: exp,
-xp4levelup: max - exp,
-github: _package.homepage ? _package.homepage.url || _package.homepage : '[unknown github url]',
-level, limit, name, weton, week, date, dateIslamic, time, totalreg, rtotalreg, role,
-readmore: readMore
-}
-text = text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join`|`})`, 'g'), (_, name) => '' + replace[name])
-let who = m.mentionedJid && m.mentionedJid[0] ? m.mentionedJid[0] : m.fromMe ? conn.user.jid : m.sender
-let mentionedJid = [who]
-let username = conn.getName(who)
+let user = global.db.data.users[m.sender]
+let { money, joincount } = global.db.data.users[m.sender]
+let { exp, limit, level, role } = global.db.data.users[m.sender]
+let rtotalreg = Object.values(global.db.data.users).filter(user => user.registered == true).length 
+let more = String.fromCharCode(8206)
+let readMore = more.repeat(850)   
 let taguser = '@' + m.sender.split("@s.whatsapp.net")[0]
-let pp = gataVidMenu
-let pareja = global.db.data.users[m.sender].pasangan 
-const numberToEmoji = { "0": "0️⃣", "1": "1️⃣", "2": "2️⃣", "3": "3️⃣", "4": "4️⃣", "5": "5️⃣", "6": "6️⃣", "7": "7️⃣", "8": "8️⃣", "9": "9️⃣", }
-let lvl = level
-let emoji = Array.from(lvl.toString()).map((digit) => numberToEmoji[digit] || "❓").join("")
-
-let fechaMoment, formatDate, nombreLugar, ciudad = null
-const phoneNumber = '+' + m.sender
-const parsedPhoneNumber = parsePhoneNumber(phoneNumber)
-const countryCode = parsedPhoneNumber.country
-const countryData = ct.getCountry(countryCode)
-const timezones = countryData.timezones
-const zonaHoraria = timezones.length > 0 ? timezones[0] : 'UTC'
-moment.locale(mid.idioma_code)
-let lugarMoment = moment().tz(zonaHoraria)
-if (lugarMoment) {
-fechaMoment = lugarMoment.format('llll [(]a[)]')
-formatDate = fechaMoment.charAt(0).toUpperCase() + fechaMoment.slice(1) 
-nombreLugar = countryData.name
-const partes = zonaHoraria.split('/')
-ciudad = partes[partes.length - 1].replace(/_/g, ' ')
-}else{
-lugarMoment = moment().tz('America/Lima')
-fechaMoment = lugarMoment.format('llll [(]a[)]')
-formatDate = fechaMoment.charAt(0).toUpperCase() + fechaMoment.slice(1) 
-nombreLugar = 'America'
-ciudad = 'Lima'
-}	
-let margen = '*··················································*'
-let menu = `${lenguajeGB['smsConfi2']()} *${user.genero === 0 ? '👤' : user.genero == 'Ocultado 🕶️' ? `🕶️` : user.genero == 'Mujer 🚺' ? `🚺` : user.genero == 'Hombre 🚹' ? `🚹` : '👤'} ${user.registered === true ? user.name : taguser}* ${(conn.user.jid == global.conn.user.jid ? '' : `\n*SOY SUB BOT DE: https://wa.me/${global.conn.user.jid.split`@`[0]}*`) || ''}
-
-> *_${formatDate}_*
-> \`${nombreLugar} - ${ciudad}\`
-
-${margen}
-
-> 🌟 *INFORMACIÓN GENERAL* 🌟 
-
-*❰❰ ${lenguajeGB['smsTotalUsers']()} ❱❱* 
-➺ \`\`\`${Object.keys(global.db.data.users).length}\`\`\`
-
-*❰❰ Registrados ❱❱* 
-➺ \`\`\`${rtotalreg}/${totalreg}\`\`\`    
-
-*❰❰ ${lenguajeGB['smsUptime']()} ❱❱* 
-➺ \`\`\`${uptime}\`\`\`
-
-*❰❰ ${lenguajeGB['smsVersion']()} ❱❱* 
-➺ \`\`\`${vs}\`\`\`
-
-*❰❰ ${lenguajeGB['smsMode']()} ❱❱* 
-➺ \`${global.opts['self'] ? `${lenguajeGB['smsModePrivate']().charAt(0).toUpperCase() + lenguajeGB['smsModePrivate']().slice(1).toLowerCase()}` : `${lenguajeGB['smsModePublic']().charAt(0).toUpperCase() + lenguajeGB['smsModePublic']().slice(1).toLowerCase()}`}\`
-
-*❰❰ ${lenguajeGB['smsBanChats']()} ❱❱* 
-➺ \`\`\`${Object.entries(global.db.data.chats).filter(chat => chat[1].isBanned).length}\`\`\`
-
-*❰❰ ${lenguajeGB['smsBanUsers']()} ❱❱* 
-➺ \`\`\`${Object.entries(global.db.data.users).filter(user => user[1].banned).length}\`\`\`
-
-${margen}
-
-> ✨ *INFORMACIÓN DEL USUARIO* ✨
-
-*❰❰ Tipo de registro ❱❱*
-➺ ${user.registered === true ? `_${user.registroC === true ? '🗂️ Registro Completo' : '📑 Registro Rápido'}_` : '❌ _Sin registro_'}
-
-*❰❰ Mi estado ❱❱*
-➺ ${typeof user.miestado !== 'string' ? '❌ *Establecer usando:* _' + usedPrefix + 'miestado_' : '_Me siento ' + user.miestado + '_'}
-
-*❰❰ Registrado ❱❱*
-➺ ${user.registered === true ? '✅ Verificado' : '❌ *Establecer registro usando:* _' + usedPrefix + 'verificar_'}
-
-*❰❰ ${lenguajeGB['smsBotonM7']().charAt(0).toUpperCase() + lenguajeGB['smsBotonM7']().slice(1).toLowerCase()} ❱❱* 
-➺ ${user.premiumTime > 0 ? '✅ Eres usuario Premium' : '❌ *Establecer Premium:* _' + usedPrefix + 'pase premium_'}
-
-*❰❰ ${lenguajeGB['smsBotonM5']().charAt(0).toUpperCase() + lenguajeGB['smsBotonM5']().slice(1).toLowerCase()} ❱❱* 
-➺ ${role}
-
-*❰❰ ${lenguajeGB['smsBotonM6']().charAt(0).toUpperCase() + lenguajeGB['smsBotonM6']().slice(1).toLowerCase()} ❱❱*
-➺ ${emoji} \`${user.exp - min}/${xp}\`
-
-*❰❰ ${lenguajeGB['smsPareja']()} ❱❱*
-➺ ${pareja ? `${name} 💕 ${conn.getName(pareja)}` : `🛐 ${lenguajeGB['smsResultPareja']()}`}
-
-*❰❰ Pasatiempo(s) ❱❱* 
-➺ ${user.pasatiempo === 0 ? '*Sin Registro*' : user.pasatiempo + '\n'}
-
-${margen}
-
-> 💫 *INFORMACIÓN* 💫\n
-${generateCommand(commandsInfo, usedPrefix)}
-
-${margen}
-
-> 💻 *COMANDOS - SUB BOT*\n
-${generateCommand(commandsJadiBot, usedPrefix)}
-
-${margen}
-
-> 🆘 *REPORTAR COMANDOS* 🆘\n
-${generateCommand(commandsReport, usedPrefix)}
-
-${margen}
-
-> 🪅 *GATABOT TEMPORAL* 🪅\n
-${generateCommand(commandsLink, usedPrefix)}
-
-${margen}
-
-> 🎟️ *SER PREMIUM* 🎟️\n
-${generateCommand(commandsPrem, usedPrefix)}
-
-${margen}
-
-> 🎡 *JUEGOS* 🎡\n
-${generateCommand(commandsGames, usedPrefix)}
-
-${margen}
-
-> ✨ *IA* ✨\n
-${generateCommand(commandsAI, usedPrefix)}
-
-${margen}
-
-> ⚙️ *AJUSTES* ⚙️
-${m.isGroup ? `_✅ ➤ Activado_
-_❌ ➤ Desactivado_` : `Para ver la configuración completa sólo use: *${usedPrefix}on* o *${usedPrefix}off*`}\n
-${generateCommand(commandsConfig, usedPrefix).replace(/≡/g, '𖡡')}
-
-${margen}
-
-> 🧾 *AJUSTES/INFO - GRUPO* 🧾
-
-✓ _${usedPrefix}configuracion_
-✓ _${usedPrefix}settings_
-✓ _${usedPrefix}vergrupo_
-
-> 🪄 *DESCARGAS* 🪄
-
-✓ _${usedPrefix}imagen | image *texto*_
-✓ _${usedPrefix}pinterest | dlpinterest *texto*_
-✓ _${usedPrefix}wallpaper|wp *texto*_
-✓ _${usedPrefix}play | play2 *texto o link*_
-✓ _${usedPrefix}play.1 *texto o link*_
-✓ _${usedPrefix}play.2 *texto o link*_ 
-✓ _${usedPrefix}ytmp3 | yta *link*_
-✓ _${usedPrefix}ytmp4 | ytv *link*_
-✓ _${usedPrefix}pdocaudio | ytadoc *link*_
-✓ _${usedPrefix}pdocvieo | ytvdoc *link*_
-✓ _${usedPrefix}tw |twdl | twitter *link*_
-✓ _${usedPrefix}facebook | fb *link*_
-✓ _${usedPrefix}instagram *link video o imagen*_
-✓ _${usedPrefix}verig | igstalk *usuario(a)*_
-✓ _${usedPrefix}ighistoria | igstory *usuario(a)*_
-✓ _${usedPrefix}tiktok *link*_
-✓ _${usedPrefix}tiktokimagen | ttimagen *link*_
-✓ _${usedPrefix}tiktokfoto | tiktokphoto *usuario(a)*_
-✓ _${usedPrefix}vertiktok | tiktokstalk *usuario(a)*_
-✓ _${usedPrefix}mediafire | dlmediafire *link*_
-✓ _${usedPrefix}clonarepo | gitclone *link*_
-✓ _${usedPrefix}clima *país ciudad*_
-✓ _${usedPrefix}consejo_
-✓ _${usedPrefix}morse codificar *texto*_
-✓ _${usedPrefix}morse decodificar *morse*_
-✓ _${usedPrefix}fraseromantica_
-✓ _${usedPrefix}historia_
-✓ _${usedPrefix}drive | dldrive *link*_
-> 👤 *CHAT ANONIMO* 👤
-
-✓ _${usedPrefix}chatanonimo | anonimochat_
-✓ _${usedPrefix}anonimoch_
-✓ _${usedPrefix}start_
-✓ _${usedPrefix}next_
-✓ _${usedPrefix}leave_
-
-> 🌐 *COMANDOS PARA GRUPOS* 🌐
-
-✓ _${usedPrefix}add *numero*_
-✓ _${usedPrefix}sacar | ban | kick  *@tag*_
-✓ _${usedPrefix}grupo *abrir o cerrar*_
-✓ _${usedPrefix}group *open o close*_
-✓ _${usedPrefix}daradmin | promote *@tag*_
-✓ _${usedPrefix}quitar | demote *@tag*_
-✓ _${usedPrefix}banchat_
-✓ _${usedPrefix}unbanchat_
-✓ _${usedPrefix}banuser *@tag*_
-✓ _${usedPrefix}unbanuser *@tag*_
-✓ _${usedPrefix}admins *texto*_
-✓ _${usedPrefix}invocar *texto*_
-✓ _${usedPrefix}tagall *texto*_
-✓ _${usedPrefix}hidetag *texto*_
-✓ _${usedPrefix}infogrupo | infogroup_
-✓ _${usedPrefix}grupotiempo | grouptime *Cantidad*_
-✓ _${usedPrefix}advertencia *@tag*_
-✓ _${usedPrefix}deladvertencia *@tag*_
-✓ _${usedPrefix}delwarn *@tag*_
-✓ _${usedPrefix}crearvoto | startvoto *texto*_
-✓ _${usedPrefix}sivotar | upvote_
-✓ _${usedPrefix}novotar | devote_
-✓ _${usedPrefix}vervotos | cekvoto_
-✓ _${usedPrefix}delvoto | deletevoto_
-✓ _${usedPrefix}enlace | link_
-✓ _${usedPrefix}newnombre | nuevonombre *texto*_
-✓ _${usedPrefix}newdesc | descripcion *texto*_
-✓ _${usedPrefix}setwelcome | bienvenida *texto*_
-✓ _${usedPrefix}setbye | despedida *texto*_
-✓ _${usedPrefix}nuevoenlace | resetlink_
-✓ _${usedPrefix}on_
-✓ _${usedPrefix}off_
-
-> 💞 *PAREJAS* 💞
-
-✓ _${usedPrefix}listaparejas | listship_
-✓ _${usedPrefix}mipareja | mylove_
-✓ _${usedPrefix}pareja | couple *@tag*_
-✓ _${usedPrefix}aceptar | accept *@tag*_
-✓ _${usedPrefix}rechazar | decline *@tag*_
-✓ _${usedPrefix}terminar | finish *@tag*_
-
-> 📦 *VOTACIONES EN GRUPOS* 📦
-
-✓ _${usedPrefix}crearvoto | startvoto *texto*_
-✓ _${usedPrefix}sivotar | upvote_
-✓ _${usedPrefix}novotar | devote_
-✓ _${usedPrefix}vervotos | cekvoto_
-✓ _${usedPrefix}delvoto | deletevoto_
-
-> 🔞 *CONTENIDO* 🔞
-
-✓ _${usedPrefix}hornymenu_
-
-> 🔁 *CONVERTIDORES* 🔁
-
-✓ _${usedPrefix}toimg | img | jpg *sticker*_
-✓ _${usedPrefix}toanime | jadianime *foto*_
-✓ _${usedPrefix}tomp3 | mp3 *video o nota de voz*_
-✓ _${usedPrefix}tovn | vn *video o audio*_
-✓ _${usedPrefix}tovideo *audio*_
-✓ _${usedPrefix}tourl *video, imagen*_
-✓ _${usedPrefix}toenlace  *video, imagen o audio*_
-✓ _${usedPrefix}tts es *texto*_
-
-> 🔆 *LOGOS* 🔆
-
-✓ _${usedPrefix}logos *efecto texto*_
-✓ _${usedPrefix}menulogos2_
-
-> 💥 *EFECTOS* 💥
-
-✓ _${usedPrefix}simpcard *@tag*_
-✓ _${usedPrefix}hornycard *@tag*_
-✓ _${usedPrefix}lolice *@tag*_
-✓ _${usedPrefix}ytcomment *texto*_
-✓ _${usedPrefix}itssostupid_
-✓ _${usedPrefix}pixelar_
-✓ _${usedPrefix}blur_
-
-> 🍭 *RANDOM/ANIME* 🍭
-
-✓ _${usedPrefix}chica_
-✓ _${usedPrefix}chico_
-✓ _${usedPrefix}cristianoronaldo_
-✓ _${usedPrefix}messi_
-✓ _${usedPrefix}meme_
-✓ _${usedPrefix}meme2_
-✓ _${usedPrefix}itzy_
-✓ _${usedPrefix}blackpink_
-✓ _${usedPrefix}kpop *blackpink, o exo, o bts*_
-✓ _${usedPrefix}lolivid_
-✓ _${usedPrefix}loli_
-✓ _${usedPrefix}navidad_
-✓ _${usedPrefix}ppcouple_
-✓ _${usedPrefix}neko_
-✓ _${usedPrefix}waifu_
-✓ _${usedPrefix}akira_
-✓ _${usedPrefix}akiyama_
-✓ _${usedPrefix}anna_
-✓ _${usedPrefix}asuna_
-✓ _${usedPrefix}ayuzawa_
-✓ _${usedPrefix}boruto_
-✓ _${usedPrefix}chiho_
-✓ _${usedPrefix}chitoge_
-✓ _${usedPrefix}deidara_
-✓ _${usedPrefix}erza_
-✓ _${usedPrefix}elaina_
-✓ _${usedPrefix}eba_
-✓ _${usedPrefix}emilia_
-✓ _${usedPrefix}hestia_
-✓ _${usedPrefix}hinata_
-✓ _${usedPrefix}inori_
-✓ _${usedPrefix}isuzu_
-✓ _${usedPrefix}itachi_
-✓ _${usedPrefix}itori_
-✓ _${usedPrefix}kaga_
-✓ _${usedPrefix}kagura_
-✓ _${usedPrefix}kaori_
-✓ _${usedPrefix}keneki_
-✓ _${usedPrefix}kotori_
-✓ _${usedPrefix}kurumi_
-✓ _${usedPrefix}madara_
-✓ _${usedPrefix}mikasa_
-✓ _${usedPrefix}miku_
-✓ _${usedPrefix}minato_
-✓ _${usedPrefix}naruto_
-✓ _${usedPrefix}nezuko_
-✓ _${usedPrefix}sagiri_
-✓ _${usedPrefix}sasuke_
-✓ _${usedPrefix}sakura_
-✓ _${usedPrefix}cosplay_
-
-> 🎙️ *EFECTO DE AUDIO* 🎙️
-
-✓ _${usedPrefix}bass_
-✓ _${usedPrefix}blown_
-✓ _${usedPrefix}deep_
-✓ _${usedPrefix}earrape_
-✓ _${usedPrefix}fast_
-✓ _${usedPrefix}fat_
-✓ _${usedPrefix}nightcore_
-✓ _${usedPrefix}reverse_
-✓ _${usedPrefix}robot_
-✓ _${usedPrefix}slow_
-✓ _${usedPrefix}smooth_
-✓ _${usedPrefix}tupai_
-
-> 🔍 *BÚSQUEDAS* 🔍
-
-✓ _${usedPrefix}animeinfo *texto*_
-✓ _${usedPrefix}mangainfo *texto*_
-✓ _${usedPrefix}google *texto*_
-✓ _${usedPrefix}googlelyrics *texto*_
-✓ _${usedPrefix}letra | lirik *texto*_
-✓ _${usedPrefix}ytsearch | yts *texto*_
-✓ _${usedPrefix}wiki | wikipedia *texto*_
-
-> 🔊 *AUDIOS* 🔊
-
-✓ _${usedPrefix}audios_
-
-> 🛠️ *HERRAMIENTAS* 🛠️
-
-✓ _${usedPrefix}afk *motivo*_
-✓ _${usedPrefix}acortar *url*_
-✓ _${usedPrefix}calc *operacion math*_
-✓ _${usedPrefix}del *respondre a mensaje del Bot*_
-✓ _${usedPrefix}qrcode *texto*_
-✓ _${usedPrefix}readmore *texto1|texto2*_
-✓ _${usedPrefix}spamwa *numero|texto|cantidad*_
-✓ _${usedPrefix}styletext *texto*_
-✓ _${usedPrefix}traducir *texto*_
-✓ _${usedPrefix}morse codificar *texto*_
-✓ _${usedPrefix}morse decodificar *morse*_
-✓ _${usedPrefix}encuesta | poll *Motivo*_
-✓ _${usedPrefix}horario_
-
-> ⚗️ *COMANDOS RPG* ⚗️
-
-✓ _${usedPrefix}botemporal *enlace* *cantidad*_
-✓ _${usedPrefix}addbot *enlace* *cantidad*_
-✓ _${usedPrefix}pase premium_
-✓ _${usedPrefix}pass premium_
-✓ _${usedPrefix}listapremium | listprem_
-✓ _${usedPrefix}transfer *tipo cantidad @tag*_
-✓ _${usedPrefix}dar *tipo cantidad @tag*_
-✓ _${usedPrefix}enviar *tipo cantidad @tag*_
-✓ _${usedPrefix}balance_
-✓ _${usedPrefix}cartera | wallet_
-✓ _${usedPrefix}experiencia | exp_
-✓ _${usedPrefix}top | lb | leaderboard_
-✓ _${usedPrefix}nivel | level | lvl_
-✓ _${usedPrefix}rol | rango_
-✓ _${usedPrefix}inventario | inventory_
-✓ _${usedPrefix}aventura | adventure_
-✓ _${usedPrefix}caza | cazar | hunt_
-✓ _${usedPrefix}pescar | fishing_
-✓ _${usedPrefix}animales_
-✓ _${usedPrefix}alimentos_
-✓ _${usedPrefix}curar | heal_
-✓ _${usedPrefix}buy_
-✓ _${usedPrefix}sell_
-✓ _${usedPrefix}verificar | registrar_
-✓ _${usedPrefix}perfil | profile_
-✓ _${usedPrefix}myns_
-✓ _${usedPrefix}unreg *numero de serie*_
-✓ _${usedPrefix}minardiamantes | minargemas_
-✓ _${usedPrefix}minargatacoins | minarcoins_
-✓ _${usedPrefix}minarexperiencia | minarexp_
-✓ _${usedPrefix}minar *:* minar2 *:* minar3_
-✓ _${usedPrefix}rob | robar 
-✓ _${usedPrefix}crime
-✓ _${usedPrefix}reclamar | regalo | claim_
-✓ _${usedPrefix}cadahora | hourly_
-✓ _${usedPrefix}cadasemana | semanal | weekly_
-✓ _${usedPrefix}cadames | mes | monthly_
-✓ _${usedPrefix}cofre | abrircofre | coffer_
-✓ _${usedPrefix}trabajar | work_
-
-> 🌟 *RPG Fnatasy* 🌟
-
-✓ _${usedPrefix}fantasy | fy_
-✓ _c_
-✓ _${usedPrefix}fyguia | fyguide_
-✓ _${usedPrefix}fantasyinfo | fyinfo_
-✓ _${usedPrefix}fyagregar | fyadd_
-✓ _${usedPrefix}fycambiar | fychange_
-✓ _${usedPrefix}fylista | fyl_
-✓ _${usedPrefix}fantasymy | fymy_
-✓ _${usedPrefix}fyentregar | fytransfer_
-
-> 🏆 *TOP en RPG Fnatasy* 🏆
-
-✓ _${usedPrefix}fytendencia | fyranking_
-
-> 🏆 *TOP en GATABOT* 🏆
-
-✓ _${usedPrefix}top | lb | leaderboard_
-
-> 🎭 *FILTROS EN STICKERS* 🎭
-
-✓ _${usedPrefix}sticker | s *imagen o video*_
-✓ _${usedPrefix}sticker | s *url de tipo jpg*_
-✓ _${usedPrefix}emojimix *😺+😆*_
-✓ _${usedPrefix}scircle | círculo *imagen*_
-✓ _${usedPrefix}semoji | emoji *tipo emoji*_
-✓ _${usedPrefix}attp *texto*_
-✓ _${usedPrefix}attp2 *texto*_
-✓ _${usedPrefix}ttp *texto*_
-✓ _${usedPrefix}ttp2 *texto*_
-✓ _${usedPrefix}ttp3 *texto*_
-✓ _${usedPrefix}ttp4 *texto*_
-✓ _${usedPrefix}ttp5 *texto*_
-✓ _${usedPrefix}ttp6 *texto*_
-✓ _${usedPrefix}dado_
-✓ _${usedPrefix}stickermarker *efecto : responder a imagen*_
-✓ _${usedPrefix}stickerfilter *efecto : responder a imagen*_
-✓ _${usedPrefix}cs *:* cs2_
-
-> 😼 *MODIFICAR STICKERS* 😼
-
-✓ _${usedPrefix}wm *packname|author*_
-✓ _${usedPrefix}wm *texto1|texto2*_
-
-> 👻 *STICKERS DINÁMICOS* 👻
-
-✓ _${usedPrefix}palmaditas | pat *@tag*_
-✓ _${usedPrefix}bofetada | slap *@tag*_
-✓ _${usedPrefix}golpear *@tag*_
-✓ _${usedPrefix}besar | kiss *@tag*_
-✓ _${usedPrefix}alimentar | food *@tag*_
-
-> 💎 *PARA MI CREADOR/A* 💎
-
-✓ _${usedPrefix}join *enlace*_
-✓ _${usedPrefix}unete *enlace*_
-✓ _${usedPrefix}dardiamantes *cantidad*_
-✓ _${usedPrefix}darxp *cantidad*_
-✓ _${usedPrefix}dargatacoins *cantidad*_
-✓ _${usedPrefix}addprem | userpremium *@tag* *cantidad*_
-✓ _${usedPrefix}addprem2 | userpremium2 *@tag* *cantidad*_
-✓ _${usedPrefix}addprem3 | userpremium3 *@tag* *cantidad*_
-✓ _${usedPrefix}addprem4 | userpremium4 *@tag* *cantidad*_
-✓ _${usedPrefix}idioma | language_
-✓ _${usedPrefix}cajafuerte_
-✓ _${usedPrefix}comunicar | broadcastall | bc *texto*_
-✓ _${usedPrefix}broadcastchats | bcc *texto*_
-✓ _${usedPrefix}comunicarpv *texto*_
-✓ _${usedPrefix}broadcastgc *texto*_
-✓ _${usedPrefix}comunicargrupos *texto*_
-✓ _${usedPrefix}borrartmp | cleartmp_
-✓ _${usedPrefix}delexp *@tag*_
-✓ _${usedPrefix}delgatacoins *@tag*_
-✓ _${usedPrefix}deldiamantes *@tag*_
-✓ _${usedPrefix}reiniciar | restart_
-✓ _${usedPrefix}ctualizar | update_
-✓ _${usedPrefix}addprem | +prem *@tag*_
-✓ _${usedPrefix}delprem | -prem *@tag*_
-✓ _${usedPrefix}listapremium | listprem_
-✓ _${usedPrefix}añadirdiamantes *@tag cantidad*_
-✓ _${usedPrefix}añadirxp *@tag cantidad*_
-✓ _${usedPrefix}añadirgatacoins *@tag cantidad*_
-`.trim()
-await conn.sendFile(m.chat, gataImg, 'lp.jpg', menu, fkontak, false, { contextInfo: {mentionedJid, externalAdReply :{ mediaUrl: null, mediaType: 1, description: null, title: gt, body: ' 😻 𝗦𝘂𝗽𝗲𝗿 𝗚𝗮𝘁𝗮𝗕𝗼𝘁-𝗠𝗗 - 𝗪𝗵𝗮𝘁𝘀𝗔𝗽𝗽 ', previewType: 0, thumbnail: imagen4, sourceUrl: redesMenu }}})
-//conn.sendFile(m.chat, gataVidMenu.getRandom(), 'gata.mp4', menu, fkontak)
-} catch (e) {
-await m.reply(lenguajeGB['smsMalError3']() + '\n*' + lenguajeGB.smsMensError1() + '*\n*' + usedPrefix + `${lenguajeGB.lenguaje() == 'es' ? 'reporte' : 'report'}` + '* ' + `${lenguajeGB.smsMensError2()} ` + usedPrefix + command)
-console.log(`❗❗ ${lenguajeGB['smsMensError2']()} ${usedPrefix + command} ❗❗`)
-console.log(e)}
-
-
-}
-
-//handler.command = /^(menu|menú|memu|memú|help|info|comandos|2help|menu1.2|ayuda|commands|commandos|menucompleto|allmenu|allm|m|\?)$/i
-handler.command = /^(menucompleto|allmenu|\?)$/i
-handler.register = true
+var doc = ['pdf','zip','vnd.openxmlformats-officedocument.presentationml.presentation','vnd.openxmlformats-officedocument.spreadsheetml.sheet','vnd.openxmlformats-officedocument.wordprocessingml.document']
+var document = doc[Math.floor(Math.random() * doc.length)]    
+let str = `╭═══〘 ✯✯✯✯✯✯✯✯✯ 〙══╮
+║    ◉— *IBRAHIM - BOT* —◉
+║≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡║
+║➤ *salam, ${taguser}*
+║≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡║
+║➤ *Owner:* IBRAHIM LOUKILI
+║➤ *Numero:* wa.me/212778214437
+║➤ *Bot ofc:* wa.me/212703481047
+║➤ *Fecha:* ${date}
+║➤ *Tiempo activo:* ${uptime}
+║➤ *Usuarios:* ${rtotalreg}
+╰═══╡✯✯✯✯✯✯✯✯✯╞═══╯
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕀ℕ𝔽𝕆 𝔻𝔼𝕃 𝕌𝕊𝕌𝔸ℝ𝕀𝕆 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ *🎖️ Nivel:* ${level}
+┣ *🧰 Experiencia:* ${exp}
+┣ *⚓ Rango:* ${role}
+┣ *💎 Diamantes:* ${limit}
+┣ *👾 MysticCoins:* ${money}
+┣ *🪙 Tokens:* ${joincount}
+┣ *🎟️ Premium:* ${user.premiumTime > 0 ? '✅' : (isPrems ? '✅' : '❌') || ''}
+┗━━━━━━━━━━━━━━━━┛
+${readMore}
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔹𝕆𝕋 𝕆𝔽ℂ 𝕆 𝕊𝕌𝔹 𝔹𝕆𝕋 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ${(conn.user.jid == global.conn.user.jid ? '' : `Jadibot de: https://wa.me/${global.conn.user.jid.split`@`[0]}`) || '*Este es el Bot oficial*'}
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕀ℕ𝔽𝕆 𝔹𝕆𝕋 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 💟 _${usedPrefix}terminosycondiciones_
+┣ ඬ⃟ 💟 _${usedPrefix}grupos_
+┣ ඬ⃟ 💟 _${usedPrefix}estado_
+┣ ඬ⃟ 💟 _${usedPrefix}infobot_
+┣ ඬ⃟ 💟 _${usedPrefix}labiblia_
+┣ ඬ⃟ 💟 _${usedPrefix}animes_
+┣ ඬ⃟ 💟 _${usedPrefix}speedtest_
+┣ ඬ⃟ 💟 _${usedPrefix}donar_
+┣ ඬ⃟ 💟 _${usedPrefix}grouplist_
+┣ ඬ⃟ 💟 _${usedPrefix}owner_
+┣ ඬ⃟ 💟 _${usedPrefix}script_
+┣ ඬ⃟ 💟 _${usedPrefix}listprem_
+┣ ඬ⃟ 💟 _Bot_ (𝑢𝑠𝑜 𝑠𝑖𝑛 𝑝𝑟𝑒𝑓𝑖𝑗𝑜)
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕌ℕ𝔼 𝕌ℕ 𝔹𝕆𝕋 𝔸 𝕋𝕌 𝔾ℝ𝕌ℙ𝕆 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 👽 _${usedPrefix}join *<enlace / link / url>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕊𝔼ℝ𝔹𝕆𝕋 - 𝕁𝔸𝔻𝕀𝔹𝕆𝕋 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🤖 _${usedPrefix}serbot_
+┣ ඬ⃟ 🤖 _${usedPrefix}stop_
+┣ ඬ⃟ 🤖 _${usedPrefix}bots_
+┗━━━━━━━━━━━━━━━━┛  
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕁𝕌𝔼𝔾𝕆𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🎖️ _${usedPrefix}mates *<noob / easy / medium / hard / extreme /impossible /impossible2>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}ppt *<papel / tijera /piedra>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}prostituto *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}prostituta *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}gay2 *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}lesbiana *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}pajero *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}pajera *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}puto *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}puta *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}manco *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}manca *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}rata *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}love *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}doxear *<nombre / @tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}pregunta *<texto>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}suitpvp *<@tag>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}slot *<apuesta>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}ttt *<nombre sala>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}delttt_
+┣ ඬ⃟ 🎖️ _${usedPrefix}acertijo_
+┣ ඬ⃟ 🎖️ _${usedPrefix}simi *<texto>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}top *<texto>*_
+┣ ඬ⃟ 🎖️ _${usedPrefix}topgays_
+┣ ඬ⃟ 🎖️ _${usedPrefix}topotakus_
+┣ ඬ⃟ 🎖️ _${usedPrefix}formarpareja_
+┣ ඬ⃟ 🎖️ _${usedPrefix}verdad_
+┣ ඬ⃟ 🎖️ _${usedPrefix}reto_
+┣ ඬ⃟ 🎖️ _${usedPrefix}cancion_
+┣ ඬ⃟ 🎖️ _${usedPrefix}pista_
+┣ ඬ⃟ 🎖️ _${usedPrefix}akinator_
+┣ ඬ⃟ 🎖️ _${usedPrefix}wordfind_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔸ℂ𝕋𝕀𝕍𝔸ℝ 𝕆 𝔻𝔼𝕊𝔸ℂ𝕋𝕀𝕍𝔸ℝ />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *welcome*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *welcome*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *modohorny*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *modohorny*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *antilink*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *antilink*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *antilink2*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *antilink2*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *detect*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *detect*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *audios*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *audios*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *autosticker*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *autosticker*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *antiviewonce*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *antiviewonce*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *antitoxic*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *antitoxic*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *antitraba*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *antitraba*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *antiarabes*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *antiarabes*_
+┣ ඬ⃟ ☑️ _${usedPrefix}enable *modoadmin*_
+┣ ඬ⃟ ☑️ _${usedPrefix}disable *modoadmin*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┣ *< ℝ𝔼ℙ𝕆ℝ𝕋𝔸ℝ 𝔼ℝℝ𝕆ℝ𝔼𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🔰 _${usedPrefix}reporte *<texto>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔻𝔼𝕊ℂ𝔸ℝ𝔾𝔸𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 📥 _${usedPrefix}instagram *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}mediafire *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}gitclone *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}gdrive *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}tiktok *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}xnxxdl *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}xvideosdl *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}twitter *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}fb *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}ytmp3 *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}ytmp4 *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}ytmp3doc *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}ytmp4doc *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}videodoc *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}dapk2 *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}stickerpack *<enlace / link / url>*_
+┣ ඬ⃟ 📥 _${usedPrefix}play *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}pla3 *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}play.1 *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}play.2 *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}playdoc *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}playlist *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}playlist2 *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}spotify *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}ringtone *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}soundcloud *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}imagen *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}pinterest *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}wallpaper *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}wallpaper2 *<texto>*_
+┣ ඬ⃟ 📥 _${usedPrefix}pptiktok *<nombre de usuario>*_
+┣ ඬ⃟ 📥 _${usedPrefix}igstalk *<nombre de usuario>*_
+┣ ඬ⃟ 📥 _${usedPrefix}igstory *<nombre de usuario>*_
+┣ ඬ⃟ 📥 _${usedPrefix}tiktokstalk *<username>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔾ℝ𝕌ℙ𝕆𝕊 />* 
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 💎 _${usedPrefix}add *<numero>*_
+┣ ඬ⃟ 💎 _${usedPrefix}kick *<@tag>*_
+┣ ඬ⃟ 💎 _${usedPrefix}kick2 *<@tag>*_
+┣ ඬ⃟ 💎 _${usedPrefix}listanum *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}kicknum *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}grupo *<abrir / cerrar>*_
+┣ ඬ⃟ 💎 _${usedPrefix}grouptime *<opcion> <tiempo>*_
+┣ ඬ⃟ 💎 _${usedPrefix}promote *<@tag>*_
+┣ ඬ⃟ 💎 _${usedPrefix}demote *<@tag>*_
+┣ ඬ⃟ 💎 _admins *<texto>*_ (𝑢𝑠𝑜 𝑠𝑖𝑛 𝑝𝑟𝑒𝑓𝑖𝑗𝑜)
+┣ ඬ⃟ 💎 _${usedPrefix}demote *<@tag>*_
+┣ ඬ⃟ 💎 _${usedPrefix}infogroup_
+┣ ඬ⃟ 💎 _${usedPrefix}resetlink_
+┣ ඬ⃟ 💎 _${usedPrefix}link_
+┣ ඬ⃟ 💎 _${usedPrefix}setname *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}setdesc *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}invocar *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}setwelcome *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}setbye *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}hidetag *<texto>*_
+┣ ඬ⃟ 💎 _${usedPrefix}hidetag *<audio>*_
+┣ ඬ⃟ 💎 _${usedPrefix}hidetag *<video>*_
+┣ ඬ⃟ 💎 _${usedPrefix}hidetag *<imagen>*_
+┣ ඬ⃟ 💎 _${usedPrefix}warn *<@tag>*_
+┣ ඬ⃟ 💎 _${usedPrefix}unwarn *<@tag>*_
+┣ ඬ⃟ 💎 _${usedPrefix}listwarn_
+┣ ඬ⃟ 💎 _${usedPrefix}fantasmas_
+┣ ඬ⃟ 💎 _${usedPrefix}destraba_
+┣ ඬ⃟ 💎 _${usedPrefix}setpp *<imagen>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< ℂ𝕆ℕ𝕍𝔼ℝ𝕋𝕀𝔻𝕆ℝ𝔼𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🧧 _${usedPrefix}toanime *<imagen>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}togifaud *<video>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}toimg *<sticker>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}tomp3 *<video>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}tomp3 *<nota de voz>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}toptt *<video / audio>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}tovideo *<sticker>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}tourl *<video / imagen / audio>*_
+┣ ඬ⃟ 🧧 _${usedPrefix}tts es *<texto>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔼𝔽𝔼ℂ𝕋𝕆𝕊 𝕐 𝕃𝕆𝔾𝕆𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🖍️ _${usedPrefix}phmaker *<opcion> <imagen>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}logos *<efecto> <texto>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}logochristmas *<texto>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}logocorazon *<texto>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}ytcomment *<texto>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}hornycard *<@tag>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}simpcard *<@tag>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}lolice *<@tag>*_
+┣ ඬ⃟ 🖍️ _${usedPrefix}itssostupid_
+┣ ඬ⃟ 🖍️ _${usedPrefix}pixelar_
+┣ ඬ⃟ 🖍️ _${usedPrefix}blur_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔽ℝ𝔸𝕊𝔼𝕊 𝕐 𝕋𝔼𝕏𝕋𝕆𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🥀 _${usedPrefix}piropo_
+┣ ඬ⃟ 🥀 _${usedPrefix}consejo_
+┣ ඬ⃟ 🥀 _${usedPrefix}fraseromantica_
+┣ ඬ⃟ 🥀 _${usedPrefix}historiaromantica_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< ℝ𝔸ℕ𝔻𝕆𝕄 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 👾 _${usedPrefix}kpop *<blackpink / exo / bts>*_
+┣ ඬ⃟ 👾 _${usedPrefix}cristianoronaldo_
+┣ ඬ⃟ 👾 _${usedPrefix}messi_
+┣ ඬ⃟ 👾 _${usedPrefix}cat_
+┣ ඬ⃟ 👾 _${usedPrefix}dog_
+┣ ඬ⃟ 👾 _${usedPrefix}meme_
+┣ ඬ⃟ 👾 _${usedPrefix}itzy_
+┣ ඬ⃟ 👾 _${usedPrefix}blackpink_
+┣ ඬ⃟ 👾 _${usedPrefix}lolivid_
+┣ ඬ⃟ 👾 _${usedPrefix}loli_
+┣ ඬ⃟ 👾 _${usedPrefix}navidad_
+┣ ඬ⃟ 👾 _${usedPrefix}ppcouple_
+┣ ඬ⃟ 👾 _${usedPrefix}wpmontaña_
+┣ ඬ⃟ 👾 _${usedPrefix}pubg_
+┣ ඬ⃟ 👾 _${usedPrefix}wpgaming_
+┣ ඬ⃟ 👾 _${usedPrefix}wpaesthetic_
+┣ ඬ⃟ 👾 _${usedPrefix}wpaesthetic2_
+┣ ඬ⃟ 👾 _${usedPrefix}wprandom_
+┣ ඬ⃟ 👾 _${usedPrefix}wallhp_
+┣ ඬ⃟ 👾 _${usedPrefix}wpvehiculo_
+┣ ඬ⃟ 👾 _${usedPrefix}wpmoto_
+┣ ඬ⃟ 👾 _${usedPrefix}coffee_
+┣ ඬ⃟ 👾 _${usedPrefix}pentol_
+┣ ඬ⃟ 👾 _${usedPrefix}caricatura_
+┣ ඬ⃟ 👾 _${usedPrefix}ciberespacio_
+┣ ඬ⃟ 👾 _${usedPrefix}technology_
+┣ ඬ⃟ 👾 _${usedPrefix}doraemon_
+┣ ඬ⃟ 👾 _${usedPrefix}hacker_
+┣ ඬ⃟ 👾 _${usedPrefix}planeta_
+┣ ඬ⃟ 👾 _${usedPrefix}randomprofile_
+┣ ඬ⃟ 👾 _${usedPrefix}neko_
+┣ ඬ⃟ 👾 _${usedPrefix}waifu_
+┣ ඬ⃟ 👾 _${usedPrefix}akira_
+┣ ඬ⃟ 👾 _${usedPrefix}akiyama_
+┣ ඬ⃟ 👾 _${usedPrefix}anna_
+┣ ඬ⃟ 👾 _${usedPrefix}asuna_
+┣ ඬ⃟ 👾 _${usedPrefix}ayuzawa_
+┣ ඬ⃟ 👾 _${usedPrefix}boruto_
+┣ ඬ⃟ 👾 _${usedPrefix}chiho_
+┣ ඬ⃟ 👾 _${usedPrefix}chitoge_
+┣ ඬ⃟ 👾 _${usedPrefix}deidara_
+┣ ඬ⃟ 👾 _${usedPrefix}erza_
+┣ ඬ⃟ 👾 _${usedPrefix}elaina_
+┣ ඬ⃟ 👾 _${usedPrefix}eba_
+┣ ඬ⃟ 👾 _${usedPrefix}emilia_
+┣ ඬ⃟ 👾 _${usedPrefix}hestia_
+┣ ඬ⃟ 👾 _${usedPrefix}hinata_
+┣ ඬ⃟ 👾 _${usedPrefix}inori_
+┣ ඬ⃟ 👾 _${usedPrefix}isuzu_
+┣ ඬ⃟ 👾 _${usedPrefix}itachi_
+┣ ඬ⃟ 👾 _${usedPrefix}itori_
+┣ ඬ⃟ 👾 _${usedPrefix}kaga_
+┣ ඬ⃟ 👾 _${usedPrefix}kagura_
+┣ ඬ⃟ 👾 _${usedPrefix}kaori_
+┣ ඬ⃟ 👾 _${usedPrefix}keneki_
+┣ ඬ⃟ 👾 _${usedPrefix}kotori_
+┣ ඬ⃟ 👾 _${usedPrefix}kurumi_
+┣ ඬ⃟ 👾 _${usedPrefix}madara_
+┣ ඬ⃟ 👾 _${usedPrefix}mikasa_
+┣ ඬ⃟ 👾 _${usedPrefix}miku_
+┣ ඬ⃟ 👾 _${usedPrefix}minato_
+┣ ඬ⃟ 👾 _${usedPrefix}naruto_
+┣ ඬ⃟ 👾 _${usedPrefix}nezuko_
+┣ ඬ⃟ 👾 _${usedPrefix}sagiri_
+┣ ඬ⃟ 👾 _${usedPrefix}sasuke_
+┣ ඬ⃟ 👾 _${usedPrefix}sakura_
+┣ ඬ⃟ 👾 _${usedPrefix}cosplay_
+┗━━━━━━━━━━━━━━━━┛
+
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< ℂ𝕆𝕄𝔸ℕ𝔻𝕆𝕊 +𝟙𝟠 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🔞 _${usedPrefix}pack_
+┣ ඬ⃟ 🔞 _${usedPrefix}pack2_
+┣ ඬ⃟ 🔞 _${usedPrefix}pack3_
+┣ ඬ⃟ 🔞 _${usedPrefix}videoxxx_
+┣ ඬ⃟ 🔞 _${usedPrefix}videolesbixxx_
+┣ ඬ⃟ 🔞 _${usedPrefix}tetas_
+┣ ඬ⃟ 🔞 _${usedPrefix}booty_
+┣ ඬ⃟ 🔞 _${usedPrefix}ecchi_
+┣ ඬ⃟ 🔞 _${usedPrefix}furro_
+┣ ඬ⃟ 🔞 _${usedPrefix}imagenlesbians_
+┣ ඬ⃟ 🔞 _${usedPrefix}panties_
+┣ ඬ⃟ 🔞 _${usedPrefix}pene_
+┣ ඬ⃟ 🔞 _${usedPrefix}porno_
+┣ ඬ⃟ 🔞 _${usedPrefix}randomxxx_
+┣ ඬ⃟ 🔞 _${usedPrefix}pechos_
+┣ ඬ⃟ 🔞 _${usedPrefix}yaoi_
+┣ ඬ⃟ 🔞 _${usedPrefix}yaoi2_
+┣ ඬ⃟ 🔞 _${usedPrefix}yuri_
+┣ ඬ⃟ 🔞 _${usedPrefix}yuri2_
+┣ ඬ⃟ 🔞 _${usedPrefix}trapito_
+┣ ඬ⃟ 🔞 _${usedPrefix}hentai_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwloli_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfworgy_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwfoot_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwass_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwbdsm_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwcum_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwero_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwfemdom_
+┣ ඬ⃟ 🔞 _${usedPrefix}nsfwglass_
+┣ ඬ⃟ 🔞 _${usedPrefix}hentaipdf *<texto>*_
+┣ ඬ⃟ 🔞 _${usedPrefix}hentaisearch *<texto>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔼𝔽𝔼ℂ𝕋𝕆𝕊 𝔻𝔼 𝔸𝕌𝔻𝕀𝕆𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┃*- 𝚁𝙴𝚂𝙿𝙾𝙽𝙳𝙴 𝙰 𝙰𝚄𝙳𝙸𝙾 𝙾 𝙽𝙾𝚃𝙰 𝙳𝙴 𝚅𝙾𝚉*
+┣ ඬ⃟ 🎤 _${usedPrefix}bass_
+┣ ඬ⃟ 🎤 _${usedPrefix}blown_
+┣ ඬ⃟ 🎤 _${usedPrefix}deep_
+┣ ඬ⃟ 🎤 _${usedPrefix}earrape_
+┣ ඬ⃟ 🎤 _${usedPrefix}fast_
+┣ ඬ⃟ 🎤 _${usedPrefix}fat_
+┣ ඬ⃟ 🎤 _${usedPrefix}nightcore_
+┣ ඬ⃟ 🎤 _${usedPrefix}reverse_
+┣ ඬ⃟ 🎤 _${usedPrefix}robot_
+┣ ඬ⃟ 🎤 _${usedPrefix}slow_
+┣ ඬ⃟ 🎤 _${usedPrefix}smooth_
+┣ ඬ⃟ 🎤 _${usedPrefix}tupai_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< ℂℍ𝔸𝕋 𝔸ℕ𝕆ℕ𝕀𝕄𝕆 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 📳 _${usedPrefix}start_
+┣ ඬ⃟ 📳 _${usedPrefix}next_
+┣ ඬ⃟ 📳 _${usedPrefix}leave_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔹𝕌𝕊ℂ𝔸𝔻𝕆ℝ𝔼𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🔍 _${usedPrefix}cuevana *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}pelisplus *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}modapk *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}stickersearch *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}stickersearch2 *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}xnxxsearch *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}animeinfo *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}google *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}letra *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}wikipedia *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}ytsearch *<texto>*_
+┣ ඬ⃟ 🔍 _${usedPrefix}playstore *<texto>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝔸𝕌𝔻𝕀𝕆𝕊 />*   
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┃ *- 𝙴𝚂𝙲𝚁𝙸𝙱𝙴 𝙻𝙰𝚂 𝚂𝙸𝙶𝚄𝙸𝙴𝙽𝚃𝙴𝚂 𝙿𝙰𝙻𝙰𝙱𝚁𝙰𝚂 𝙾 𝙵𝚁𝙰𝚂𝙴𝚂 𝚂𝙸𝙽 𝙽𝙸𝙽𝙶𝚄𝙽 𝙿𝚁𝙴𝙵𝙸𝙹𝙾 (#, /, *, .)* 
+┃ _- (𝑢𝑠𝑜 𝑠𝑖𝑛 𝑝𝑟𝑒𝑓𝑖𝑗𝑜)_
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🔊 _Quien es tu sempai botsito 7w7_
+┣ ඬ⃟ 🔊 _Te diagnostico con gay_
+┣ ඬ⃟ 🔊 _A nadie le importa_
+┣ ඬ⃟ 🔊 _Fiesta del admin_
+┣ ඬ⃟ 🔊 _Fiesta del administrador_ 
+┣ ඬ⃟ 🔊 _Vivan los novios_
+┣ ඬ⃟ 🔊 _Feliz cumpleaños_
+┣ ඬ⃟ 🔊 _Noche de paz_
+┣ ඬ⃟ 🔊 _Buenos dias_
+┣ ඬ⃟ 🔊 _Buenos tardes_
+┣ ඬ⃟ 🔊 _Buenos noches_
+┣ ඬ⃟ 🔊 _Audio hentai_
+┣ ඬ⃟ 🔊 _Chica lgante_
+┣ ඬ⃟ 🔊 _Feliz navidad_
+┣ ඬ⃟ 🔊 _Vete a la vrg_
+┣ ඬ⃟ 🔊 _Pasa pack Bot_
+┣ ඬ⃟ 🔊 _Atencion grupo_
+┣ ඬ⃟ 🔊 _Marica quien_
+┣ ඬ⃟ 🔊 _Murio el grupo_
+┣ ඬ⃟ 🔊 _Oh me vengo_
+┣ ඬ⃟ 🔊 _tio que rico_
+┣ ඬ⃟ 🔊 _Viernes_
+┣ ඬ⃟ 🔊 _Baneado_
+┣ ඬ⃟ 🔊 _Sexo_
+┣ ඬ⃟ 🔊 _Hola_
+┣ ඬ⃟ 🔊 _Un pato_
+┣ ඬ⃟ 🔊 _Nyanpasu_
+┣ ඬ⃟ 🔊 _Te amo_
+┣ ඬ⃟ 🔊 _Yamete_
+┣ ඬ⃟ 🔊 _Bañate_
+┣ ඬ⃟ 🔊 _Es puto_
+┣ ඬ⃟ 🔊 _La biblia_
+┣ ඬ⃟ 🔊 _Onichan_
+┣ ඬ⃟ 🔊 _Mierda de Bot_
+┣ ඬ⃟ 🔊 _Siuuu_
+┣ ඬ⃟ 🔊 _Epico_
+┣ ඬ⃟ 🔊 _Shitpost_
+┣ ඬ⃟ 🔊 _Rawr_
+┣ ඬ⃟ 🔊 _UwU_
+┣ ඬ⃟ 🔊 _:c_
+┣ ඬ⃟ 🔊 _a_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< ℍ𝔼ℝℝ𝔸𝕄𝕀𝔼ℕ𝕋𝔸𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 🛠️ _${usedPrefix}chatgpt *<texto>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}chatgpt2 *<texto>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}delchatgpt
+┣ ඬ⃟ 🛠️ _${usedPrefix}dall-e *<texto>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}spamwa *<numero|texto|cantidad>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}tamaño *<cantidad> <imagen / video>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}readviewonce *<imagen / video>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}clima *<país> <ciudad>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}encuesta *<texto1|texto2...>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}afk *<motivo>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}ocr *<responde a imagen>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}hd *<responde a imagen>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}acortar *<enlace / link / url>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}calc *<operacion math>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}del *<mensaje>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}whatmusic *<audio>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}readqr *<imagen (QR)>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}qrcode *<texto>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}readmore *<texto1| texto2>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}styletext *<texto>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}traducir *<texto>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}nowa *<numero>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}covid *<pais>*_
+┣ ඬ⃟ 🛠️ _${usedPrefix}horario_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< ℝℙ𝔾 - 𝕃𝕀𝕄𝕀𝕋𝔼𝕊 - 𝔼ℂ𝕆ℕ𝕆𝕄𝕀𝔸 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 💵 _${usedPrefix}adventure_
+┣ ඬ⃟ 💵 _${usedPrefix}cazar_
+┣ ඬ⃟ 💵 _${usedPrefix}cofre_
+┣ ඬ⃟ 💵 _${usedPrefix}balance_
+┣ ඬ⃟ 💵 _${usedPrefix}claim_
+┣ ඬ⃟ 💵 _${usedPrefix}heal_
+┣ ඬ⃟ 💵 _${usedPrefix}lb_
+┣ ඬ⃟ 💵 _${usedPrefix}levelup_
+┣ ඬ⃟ 💵 _${usedPrefix}myns_
+┣ ඬ⃟ 💵 _${usedPrefix}perfil_
+┣ ඬ⃟ 💵 _${usedPrefix}work_
+┣ ඬ⃟ 💵 _${usedPrefix}minar_
+┣ ඬ⃟ 💵 _${usedPrefix}minar2_
+┣ ඬ⃟ 💵 _${usedPrefix}buy_
+┣ ඬ⃟ 💵 _${usedPrefix}buyall_
+┣ ඬ⃟ 💵 _${usedPrefix}verificar_
+┣ ඬ⃟ 💵 _${usedPrefix}robar *<cantidad> <@tag>*_
+┣ ඬ⃟ 💵 _${usedPrefix}transfer *<tipo> <cantidad> <@tag>*_
+┣ ඬ⃟ 💵 _${usedPrefix}unreg *<numero de serie>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕊𝕋𝕀ℂ𝕂𝔼ℝ𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 👽 _${usedPrefix}sticker *<responder a imagen o video>*_
+┣ ඬ⃟ 👽 _${usedPrefix}sticker *<enlace / link / url>*_
+┣ ඬ⃟ 👽 _${usedPrefix}sticker2 *<responder a imagen o video>*_
+┣ ඬ⃟ 👽 _${usedPrefix}sticker2 *<enlace / link / url>*_
+┣ ඬ⃟ 👽 _${usedPrefix}s *<responder a imagen o video>*_
+┣ ඬ⃟ 👽 _${usedPrefix}s *<enlace / link / url>*_
+┣ ඬ⃟ 👽 _${usedPrefix}s2 *<responder a imagen o video>*_
+┣ ඬ⃟ 👽 _${usedPrefix}s2 *<enlace / link / url>*_
+┣ ඬ⃟ 👽 _${usedPrefix}emojimix *<emoji 1>&<emoji 2>*_
+┣ ඬ⃟ 👽 _${usedPrefix}scircle *<imagen>*_
+┣ ඬ⃟ 👽 _${usedPrefix}sremovebg *<imagen>*_
+┣ ඬ⃟ 👽 _${usedPrefix}semoji *<tipo> <emoji>*_
+┣ ඬ⃟ 👽 _${usedPrefix}attp *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}attp2 *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}attp3 *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}ttp *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}ttp2 *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}ttp3 *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}ttp4 *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}ttp5 *<texto>*_
+┣ ඬ⃟ 👽 _${usedPrefix}pat *<@tag>*_
+┣ ඬ⃟ 👽 _${usedPrefix}slap *<@tag>*_
+┣ ඬ⃟ 👽 _${usedPrefix}kiss *<@tag>*_
+┣ ඬ⃟ 👽 _${usedPrefix}dado_
+┣ ඬ⃟ 👽 _${usedPrefix}wm *<packname> <author>*_
+┣ ඬ⃟ 👽 _${usedPrefix}stickermarker *<efecto> <imagen>*_
+┣ ඬ⃟ 👽 _${usedPrefix}stickerfilter *<efecto> <imagen>*_
+┗━━━━━━━━━━━━━━━━┛
+
+┏━━━━━━━━━━━━━━━━┓
+┃ *< 𝕆𝕎ℕ𝔼ℝ 𝕐 𝕄𝕆𝔻𝔼ℝ𝔸𝔻𝕆ℝ𝔼𝕊 />*
+┃≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡┃
+┣ ඬ⃟ 👑 > *<funcion>*
+┣ ඬ⃟ 👑 => *<funcion>*
+┣ ඬ⃟ 👑 $ *<funcion>*
+┣ ඬ⃟ 👑 _${usedPrefix}setprefix *<prefijo>*_
+┣ ඬ⃟ 👑 _${usedPrefix}desactivarwa *<numero>*_
+┣ ඬ⃟ 👑 _${usedPrefix}resetprefix_
+┣ ඬ⃟ 👑 _${usedPrefix}autoadmin_
+┣ ඬ⃟ 👑 _${usedPrefix}leavegc_
+┣ ඬ⃟ 👑 _${usedPrefix}cajafuerte_
+┣ ඬ⃟ 👑 _${usedPrefix}blocklist_
+┣ ඬ⃟ 👑 _${usedPrefix}block *<@tag / numero>*_
+┣ ඬ⃟ 👑 _${usedPrefix}unblock *<@tag / numero>*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *restrict*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *restrict*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *autoread*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *autoread*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *public*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *public*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *pconly*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *pconly*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *gconly*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *gconly*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *anticall*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *anticall*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *antiprivado*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *antiprivado*_
+┣ ඬ⃟ 👑 _${usedPrefix}enable *modejadibot*_
+┣ ඬ⃟ 👑 _${usedPrefix}disable *modejadibot*_
+┣ ඬ⃟ 👑 _${usedPrefix}msg *<texto>*_
+┣ ඬ⃟ 👑 _${usedPrefix}banchat_
+┣ ඬ⃟ 👑 _${usedPrefix}unbanchat_
+┣ ඬ⃟ 👑 _${usedPrefix}banuser *<@tag>*_
+┣ ඬ⃟ 👑 _${usedPrefix}unbanuser *<@tag>*_
+┣ ඬ⃟ 👑 _${usedPrefix}dardiamantes *<@tag>*_
+┣ ඬ⃟ 👑 _${usedPrefix}añadirxp *<@tag>*_
+┣ ඬ⃟ 👑 _${usedPrefix}banuser *<@tag>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bc *<texto>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bcchats *<texto>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bcgc *<texto>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bcgc2 *<audio>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bcgc2 *<video>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bcgc2 *<imagen>*_
+┣ ඬ⃟ 👑 _${usedPrefix}bcbot *<texto>*_
+┣ ඬ⃟ 👑 _${usedPrefix}cleartpm_
+┣ ඬ⃟ 👑 _${usedPrefix}restart_
+┣ ඬ⃟ 👑 _${usedPrefix}update_
+┣ ඬ⃟ 👑 _${usedPrefix}banlist_
+┣ ඬ⃟ 👑 _${usedPrefix}addprem *<@tag> <tiempo>*_
+┣ ඬ⃟ 👑 _${usedPrefix}addprem2 *<@tag> <tiempo>*_
+┣ ඬ⃟ 👑 _${usedPrefix}addprem3 *<@tag> <tiempo>*_
+┣ ඬ⃟ 👑 _${usedPrefix}addprem4 *<@tag> <tiempo>*_
+┣ ඬ⃟ 👑 _${usedPrefix}delprem *<@tag>*_
+┣ ඬ⃟ 👑 _${usedPrefix}listcmd_
+┣ ඬ⃟ 👑 _${usedPrefix}setppbot *<responder a imagen>*_
+┣ ඬ⃟ 👑 _${usedPrefix}addcmd *<texto> <responder a sticker/imagen>*_
+┣ ඬ⃟ 👑 _${usedPrefix}delcmd *<responder a sticker/imagen con comando o texto asignado>*_
+┗━━━━━━━━━━━━━━━━┛`.trim()
+if (m.isGroup) {
+//await conn.sendFile(m.chat, vn, 'menu.mp3', null, m, true, { type: 'audioMessage', ptt: true})
+let fkontak2 = { "key": { "participants":"0@s.whatsapp.net", "remoteJid": "status@broadcast", "fromMe": false, "id": "Halo" }, "message": { "contactMessage": { "vcard": `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD` }}, "participant": "0@s.whatsapp.net" }  
+conn.sendMessage(m.chat, { image: pp, caption: str.trim(), mentions: [...str.matchAll(/@([0-9]{5,16}|0)/g)].map(v => v[1] + '@s.whatsapp.net')}, { quoted: fkontak2 })  
+} else {    
+//await conn.sendFile(m.chat, vn, 'menu.mp3', null, m, true, { type: 'audioMessage', ptt: true})
+let fkontak2 = { "key": { "participants":"0@s.whatsapp.net", "remoteJid": "status@broadcast", "fromMe": false, "id": "Halo" }, "message": { "contactMessage": { "vcard": `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD` }}, "participant": "0@s.whatsapp.net" }  
+conn.sendMessage(m.chat, { image: pp, caption: str.trim(), mentions: [...str.matchAll(/@([0-9]{5,16}|0)/g)].map(v => v[1] + '@s.whatsapp.net')}, { quoted: fkontak2 })}
+} catch {
+conn.reply(m.chat, '*[❗𝐈𝐍𝐅𝐎❗] 𝙴𝙻 𝙼𝙴𝙽𝚄 𝚃𝙸𝙴𝙽𝙴 𝚄𝙽 𝙴𝚁𝚁𝙾𝚁 𝚈 𝙽𝙾 𝙵𝚄𝙴 𝙿𝙾𝚂𝙸𝙱𝙻𝙴 𝙴𝙽𝚅𝙸𝙰𝚁𝙻𝙾, 𝚁𝙴𝙿𝙾𝚁𝚃𝙴𝙻𝙾 𝙰𝙻 𝙿𝚁𝙾𝙿𝙸𝙴𝚃𝙰𝚁𝙸𝙾 𝙳𝙴𝙻 𝙱𝙾𝚃*', m)
+}}
+handler.command = /^(menu|menú|memu|memú|help|info|comandos|allmenu|2help|menu1.2|ayuda|commands|commandos|cmd)$/i
+handler.exp = 50
+handler.fail = null
 export default handler
-
-const more = String.fromCharCode(8206)
-const readMore = more.repeat(4001)
 function clockString(ms) {
 let h = isNaN(ms) ? '--' : Math.floor(ms / 3600000)
 let m = isNaN(ms) ? '--' : Math.floor(ms / 60000) % 60
 let s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60
-return [h, m, s].map(v => v.toString().padStart(2, 0)).join(':')}  
+return [h, m, s].map(v => v.toString().padStart(2, 0)).join(':')}
 
-// Función para formatear arrays de comandos
-function generateCommand(commandsArray, usedPrefix) {
-const formattedCommands = commandsArray
-.filter(command => {
-const comandoValido = command.comando && typeof command.comando === 'function' && command.comando()
-const descripcionValida = command.descripcion && typeof command.descripcion === 'function'
-const contextoValido = typeof command.contexto === 'string' && command.contexto.trim() !== ''
-return comandoValido || descripcionValida || contextoValido
-})
-.map((command, index, array) => {
-const prefix = (command.showPrefix === true && ((typeof command.comando === 'function' && typeof command.comando() === 'string' && command.comando().trim() !== '') ||
-(typeof command.comando === 'string' && command.comando.trim() !== ''))) ? usedPrefix : ''
-let formattedCommand = ''
-if (command.comando) {
-if (typeof command.comando === 'function') {
-const commandResult = command.comando()
-if (typeof commandResult === 'string') {
-formattedCommand = commandResult.trim()
-}} else if (typeof command.comando === 'string') {
-formattedCommand = command.comando.trim()
-}}
-if (formattedCommand.includes(',')) {
-formattedCommand = mid.idioma_code === 'es' ? formattedCommand.split(',')[0].trim() : formattedCommand.split(',')[1].trim()
-}
-let formattedDescription = ''
-if (command.descripcion) {
-if (typeof command.descripcion === 'function') {
-const descriptionResult = command.descripcion()
-if (typeof descriptionResult === 'string') {
-formattedDescription = descriptionResult.trim()
-}} else if (typeof command.descripcion === 'string') {
-formattedDescription = command.descripcion.trim()
-}}
-if (formattedDescription.includes('||')) {
-formattedDescription = mid.idioma_code === 'es' ? formattedDescription.split('||')[0].trim() : formattedDescription.split('||')[1].trim()
-}
-let formattedContext = ''
-if (command.contexto) {
-if (typeof command.contexto === 'function') {
-const contextResult = command.contexto()
-if (typeof contextResult === 'string') {
-formattedContext = contextResult.trim()
-}} else if (typeof command.contexto === 'string' && command.contexto.trim() !== '') {
-formattedContext = command.contexto.trim()
-}}
-let message = ''
-if (formattedCommand) {
-message += `✓ \`${prefix}${formattedCommand}\``
-if (formattedDescription) {
-message += `\n${(command.descripcion && typeof command.descripcion === 'function') ? '𖡡' : '≡'} \`\`\`${formattedDescription}\`\`\``
-}
-if (formattedContext) {
-message += '\nⓘ _' + formattedContext + '_' + (index !== array.length - 1 ? '\n' : '')
-}}
-return message
-})
-.filter(message => message !== '')
-return formattedCommands.join('\n')
-}
-
-// comando: Si hay comando en español y inglés separar por (,) máximo 2 comandos 
-// descripcion: Parámetros para usar el comando. Separar por (||) máximo 2 descripciones 
-// contexto: Explicación de que trata el comando
-// showPrefix: Usar true para que muestre el prefijo, de lo contrario usar false
-// Si algún objeto no se va usar dejar en false, menos el objeto "comando" ya que si es false no mostrará nada
-const commandsInfo = [
-{ comando: 'cuentasgatabot , accounts', descripcion: false, contexto: 'Cuentas oficiales', showPrefix: true },
-{ comando: 'grupos , linkgc', descripcion: false, contexto: 'Grupos oficiales', showPrefix: true },
-{ comando: 'donar , donate', descripcion: false, contexto: 'Apoya al proyecto donando', showPrefix: true },
-{ comando: 'listagrupos , grouplist', descripcion: false, contexto: 'Grupos en donde estoy', showPrefix: true },
-{ comando: 'estado , status', descripcion: false, contexto: 'Información de mí estado', showPrefix: true },
-{ comando: 'infogata , infobot', descripcion: false, contexto: 'Información sobre el Bot', showPrefix: true },
-{ comando: 'instalarbot , installbot', descripcion: false, contexto: 'Información y métodos de instalación', showPrefix: true },
-{ comando: 'creadora , owner', descripcion: false, contexto: 'Información sobre mí Creadora', showPrefix: true },
-{ comando: 'velocidad , ping', descripcion: false, contexto: 'Verifica la velocidad de este Bot', showPrefix: true },
-{ comando: 'Bot', descripcion: false, contexto: 'Mensaje predeterminado del Bot', showPrefix: false },
-{ comando: 'términos y condiciones , terms and conditions', descripcion: false, contexto: 'Revisa detalles al usar este Bot', showPrefix: false },
-]
-const commandsJadiBot = [
-{ comando: 'serbot , jadibot', descripcion: false, contexto: 'Reactiva o Conviértete en Bot secundario', showPrefix: true },
-{ comando: 'serbot --code , jadibot --code', descripcion: false, contexto: 'Solicita código de 8 dígitos', showPrefix: true },
-{ comando: 'detener , stop', descripcion: false, contexto: 'Dejar de ser temporalmente Sub Bot', showPrefix: true },
-{ comando: 'bots , listjadibots', descripcion: false, contexto: 'Lista de Bots secundarios', showPrefix: true },
-{ comando: 'borrarsesion , delsession', descripcion: false, contexto: 'Borrar datos de Bot secuandario', showPrefix: true },
-{ comando: 'bcbot', descripcion: false, contexto: 'Notificar a usuarios Sub Bots', showPrefix: true },
-]
-const commandsReport = [
-{ comando: 'reporte , report', descripcion: '[texto] || [text]', contexto: 'Reportar comandos con errores', showPrefix: true },
-]
-const commandsLink = [
-{ comando: 'botemporal , addbot', descripcion: '[enlace] [cantidad] || [link] [amount]', contexto: 'Agregar Bot temporalmente a un grupo', showPrefix: true },
-]
-const commandsPrem = [
-{ comando: 'pase premium , pass premium', descripcion: false, contexto: 'Planes para adquirir premium', showPrefix: true },
-{ comando: 'listavip , listprem', descripcion: false, contexto: 'Usuarios con tiempo premium', showPrefix: true },
-{ comando: 'listapremium , listpremium', descripcion: false, contexto: 'Lista de usuarios premium', showPrefix: true },
-]
-const commandsGames = [
-{ comando: 'matematicas , math', descripcion: '"noob, medium, hard"', contexto: 'Operaciones matemáticas 🧮', showPrefix: true },
-{ comando: 'lanzar , launch', descripcion: '"cara" o "cruz"', contexto: 'Moneda de la suerte 🪙', showPrefix: true },
-{ comando: 'ppt', descripcion: '"piedra", "papel" o "tijera"', contexto: 'Un clásico 🪨📄✂️', showPrefix: true },
-{ comando: 'ttt', descripcion: '[Nombre de la sala] || [Room name]', contexto: 'Tres en línea/rayas ❌⭕', showPrefix: true },
-{ comando: 'delttt', descripcion: false, contexto: 'Cerrar/abandonar la partida 🚪', showPrefix: true },
-{ comando: 'topgays', descripcion: false, contexto: 'Clasificación de usuarios Gays 🏳️‍🌈', showPrefix: true },
-{ comando: 'topotakus', descripcion: false, contexto: 'Clasificación de usuarios Otakus 🎌', showPrefix: true },
-{ comando: 'toppajer@s', descripcion: false, contexto: 'Clasificación de usuarios pajeros 🥵', showPrefix: true },
-{ comando: 'topintegrantes', descripcion: false, contexto: 'Mejores usuarios 👑', showPrefix: true },
-{ comando: 'toplagrasa', descripcion: false, contexto: 'Usuarios más grasosos XD', showPrefix: true },
-{ comando: 'toplind@s', descripcion: false, contexto: 'Los más lindos 😻', showPrefix: true },
-{ comando: 'topput@s', descripcion: false, contexto: 'Los más p**** 🫣', showPrefix: true },
-{ comando: 'toppanafrescos', descripcion: false, contexto: 'Los que más critican 🗿', showPrefix: true },
-{ comando: 'topshiposters', descripcion: false, contexto: 'Los que se creen graciosos 🤑', showPrefix: true },
-{ comando: 'topfamosos', descripcion: false, contexto: 'Los más conocidos ☝️', showPrefix: true },
-{ comando: 'topparejas', descripcion: false, contexto: 'Las 5 mejores 💕', showPrefix: true },
-{ comando: 'gay', descripcion: '[@tag]', contexto: 'Perfil Gay 😲', showPrefix: true },
-{ comando: 'gay2', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Gay', showPrefix: true },
-{ comando: 'lesbiana', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Lesbiana', showPrefix: true },
-{ comando: 'manca', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Manca', showPrefix: true },
-{ comando: 'manco', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Manco', showPrefix: true },
-{ comando: 'pajero', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Pajero', showPrefix: true },
-{ comando: 'pajera', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Pajera', showPrefix: true },
-{ comando: 'puto', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Puto', showPrefix: true },
-{ comando: 'puta', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Puta', showPrefix: true },
-{ comando: 'rata', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Rata', showPrefix: true },
-{ comando: 'love', descripcion: '[@tag] o [nombre] || [@tag] or [name]', contexto: '(%) de Love', showPrefix: true },
-{ comando: 'doxxear', descripcion: '[@tag]', contexto: 'Simular Doxxeo falso 🕵️‍♀️', showPrefix: true },
-{ comando: 'pregunta', descripcion: '[texto] || [text]', contexto: 'Pregunta ❔ y responderá', showPrefix: true },
-{ comando: 'apostar , slot', descripcion: '[cantidad] || [amount]', contexto: 'Apuesta a la suerte 🎰', showPrefix: true },
-{ comando: 'formarpareja', descripcion: false, contexto: 'Une a dos personas 💞', showPrefix: true },
-{ comando: 'dado', descripcion: false, contexto: 'Envía un dado aleatorio 🎲', showPrefix: true },
-{ comando: 'piropo', descripcion: false, contexto: 'Enviar un piropo 🫢', showPrefix: true },
-{ comando: 'chiste', descripcion: false, contexto: 'Envía chistes 🤡', showPrefix: true },
-{ comando: 'reto', descripcion: false, contexto: 'Pondrá un reto 😏', showPrefix: true },
-{ comando: 'frases', descripcion: '[cantidad 1 al 99] || [amount 1-99]', contexto: 'Envía frases aleatorias 💐', showPrefix: true },
-{ comando: 'acertijo', descripcion: false, contexto: 'Responde al mensaje del acertijo 👻', showPrefix: true },
-{ comando: 'cancion', descripcion: false, contexto: 'Adivina la canción 🎼', showPrefix: true },
-{ comando: 'trivia', descripcion: false, contexto: 'Preguntas con opciones 💭', showPrefix: true },
-{ comando: 'pelicula', descripcion: false, contexto: 'Descubre la película con emojis 🎬', showPrefix: true },
-{ comando: 'adivinanza', descripcion: false, contexto: 'Adivina adivinador 🧞‍♀️', showPrefix: true },
-{ comando: 'ruleta', descripcion: false, contexto: 'Suerte inesperada 💫', showPrefix: true },
-{ comando: 'ruletadelban', descripcion:false, contexto: 'Elimina un usuario al azar, solo para admins ☠️', showPrefix: true }
-]
-const commandsAI = [
-{ comando: 'simi', descripcion: '[texto] || [text]', contexto: 'Conversa con SimSimi', showPrefix: true },
-{ comando: 'ia , ai', descripcion: '[texto] || [text]', contexto: 'Tecnología de ChatGPT', showPrefix: true },
-{ comando: 'delchatgpt', descripcion: false, contexto: 'Eliminar historial de la IA', showPrefix: true },  
-{ comando: 'iavoz , aivoice', descripcion: '[texto] || [text]', contexto: 'Respuestas en audios', showPrefix: true },
-{ comando: 'calidadimg , qualityimg', descripcion: '(responde con una imagen) || (responds with an image)', contexto: 'Detalles de resolución de imagen', showPrefix: true },
-{ comando: 'dalle', descripcion: '[texto] || [text]', contexto: 'Genera imagen a partir de texto', showPrefix: true },
-{ comando: 'gemini', descripcion: '[texto] || [text]', contexto: 'IA, Tecnología de Google', showPrefix: true },
-{ comando: 'geminimg', descripcion: '(imagen) + [texto] || (image) + [text]', contexto: 'Busca información de una imagen', showPrefix: true },
-{ comando: 'hd', descripcion: '(responde con una imagen) || (responds with an image)', contexto: 'Mejorar calidad de imagen', showPrefix: true },
-] 
+/*let buttons = [
+{ buttonId: '#donar', buttonText: { displayText: '📮 𝙳𝙾𝙽𝙰𝚁 📮' }, type: 1 },
+//{ buttonId: '#terminosycondiciones', buttonText: { displayText: '📋 𝚃𝙴𝚁𝙼𝙸𝙽𝙾𝚂 𝚈 𝙲𝙾𝙽𝙳𝙸𝙲𝙸𝙾𝙽𝙴𝚂 📋' }, type: 1 }]
+{ buttonId: '#infobot', buttonText: { displayText: '🐾 𝙸𝙽𝙵𝙾𝙱𝙾𝚃 🐾' }, type: 1 }]
+let buttonMessage = {
+image: pp,
+caption: str.trim(),
+mentions: [m.sender],
+footer: `*${wm}*`,
+buttons: buttons,
+headerType: 4,
+contextInfo: {
+mentionedJid: [m.sender],
+externalAdReply: {
+showAdAttribution: true,
+mediaType: 'VIDEO',
+mediaUrl: null,
+title: '👑 IBRAHIM - BOT 👑',
+body: null,
+thumbnail: img,
+}}}
+conn.sendMessage(m.chat, buttonMessage, { quoted: m })*/
