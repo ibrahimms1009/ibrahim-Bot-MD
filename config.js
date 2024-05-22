@@ -10,23 +10,23 @@ import moment from 'moment-timezone';
 global.botnumber = ""
 
 global.owner = [
-  ['212778214437', '👑★ibrahim bot★👑', true],
+  ['212778214437', '👑★ibrahim-bot★👑', true],
 
-  ['212778214437','ibrahim bot', true],
+  ['212778214437','👑★ibrahim-bot★👑', true],
   ['212778214437'],
-  ['212703481047']
+  ['212778214437']
 ];
 
 global.suittag = ['212778214437'];
 global.prems = ['212778214437'];
 
 global.packname = 'ibrahim bot';
-global.author = 'ibrahim bot';
-global.wm = 'ibrahim bot';
-global.titulowm = 'ibrahim bot';
-global.titulowm2 = `ibrahim bot`
-global.igfg = 'ibrahim bot';
-global.wait = '*|🏃| loading...*\n*نحاول تلبية طلبكم لا تستعجلوا* ✨️\ninstagram.com/ibrahim_9zz__;
+global.author = 'ibrahimbot';
+global.wm = 'ibrahimbot';
+global.titulowm = 'ibrahimbot';
+global.titulowm2 = `ibrahim`
+global.igfg = 'ibrahimbot';
+global.wait = '*|🏃| loading...*\n*نحاول تلبية طلبكم لا تستعجلوا* ♥\ninstagram.com/ibrahim_9zz__';
 global.imagen1 = fs.readFileSync('./Menu2.jpg');
 global.imagen2 = fs.readFileSync('./src/nuevobot.jpg');
 global.imagen3 = fs.readFileSync('./src/Pre Bot Publi.png');
@@ -45,9 +45,9 @@ global.mes = d.toLocaleDateString('en', {month: 'long'});
 global.año = d.toLocaleDateString('en', {year: 'numeric'});
 global.tiempo = d.toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true});
 //* ****************************
-global.wm2 = `${dia} ${fecha}\nIBRAHIM-BOT`;
-global.gt = 'IBRAHIM-BOT';
-global.mysticbot = 'The-ibrahim-bot';
+global.wm2 = `${dia} ${fecha}\nIBRAHIMBOT`;
+global.gt = 'IBRAHIMBOT';
+global.mysticbot = 'The IBRAHIMBOT';
 global.md = 'https://instagram.com/ibrahim_9zz__';
 global.mysticbot = 'https://instagram.com/ibrahim_9zz__';
 global.waitt = '*[ ⏳ ] LOADING...*';
