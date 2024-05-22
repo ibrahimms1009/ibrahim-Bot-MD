@@ -45,9 +45,9 @@ global.mes = d.toLocaleDateString('en', {month: 'long'});
 global.año = d.toLocaleDateString('en', {year: 'numeric'});
 global.tiempo = d.toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true});
 //* ****************************
-global.wm2 = `${dia} ${fecha}\nIBRAHIM BOT`;
-global.gt = 'IBRAHIM BOT';
-global.mysticbot = 'The ibrahim bot';
+global.wm2 = `${dia} ${fecha}\nIBRAHIM-BOT`;
+global.gt = 'IBRAHIM-BOT';
+global.mysticbot = 'The-ibrahim-bot';
 global.md = 'https://instagram.com/ibrahim_9zz__;
 global.mysticbot = 'https://instagram.com/ibrahim_9zz__;
 global.waitt = '*[ ⏳ ] LOADING...*';
