@@ -1,35 +1,20 @@
-// هذا الكود مثالي ويحتاج إلى مكتبة للسكرابينج متوافقة مع APKPure
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
-
-const getAPKPureDownloadLink = async (gameName) => {
-  const searchUrl = `https://apkpure.com/search?q=${encodeURIComponent(gameName)}`;
-  const searchResponse = await fetch(searchUrl);
-  const searchBody = await searchResponse.text();
-  const $ = cheerio.load(searchBody);
-  const gamePageUrl = 'https://apkpure.com' + $('.search-dl a').attr('href');
-
-  const gamePageResponse = await fetch(gamePageUrl);
-  const gamePageBody = await gamePageResponse.text();
-  const $$ = cheerio.load(gamePageBody);
-  const downloadLink = $$('#download_link').attr('href');
-
-  return downloadLink;
+import {search, download} from 'aptoide-scraper';
+const handler = async (m, {conn, usedPrefix: prefix, command, text}) => {
+ if (!text) throw `معشوق الجماهير هذا الأمر خاص بتحميل التطبيقات المجانية والمدفوعة منها نكتب هكذا على سبيل المثال \n*.apk facebbok lite*`;
+  try {    
+    const searchA = await search(text);
+    const data5 = await download(searchA[0].id);
+    let response = `📲 تحميل التطبيقات 📲\n\n📌 *اسم التطبيق:* ${data5.name}\n📦 *الباكيدج:* ${data5.package}\n🕒 *تحذيث رقم:* ${data5.lastup}\n📥 *حجم التطبيق:* ${data5.size}\n\nما الذي يجعلك لا تتابع  صاحب البوت يا عزيزي  😄 يحب من يستعمل بوتاته لذا تابعه في حساباته \ninstagram.com/ibrahim_9zz__`
+    await conn.sendMessage(m.chat, {image: {url: data5.icon}, caption: response}, {quoted: m});
+ if (data5.size.includes('GB') || data5.size.replace(' MB', '') > 999) {
+      return await conn.sendMessage(m.chat, {text: '*[ 😁 ]الملف كبير جدًا لذا لن يتم إرساله.'}, {quoted: m});
+    }
+    await conn.sendMessage(m.chat, {document: {url: data5.dllink}, mimetype: 'application/vnd.android.package-archive', fileName: data5.name + '.apk', caption: null}, {quoted: m});
+  } catch {
+    throw `*[😒] خطأ، لم يتم العثور على نتائج لبحثك.*`;
+  }    
 };
-
-const handler = async (m, { conn, text }) => {
-  if (!text) throw 'استخدم الأمر كالتالي: *.apk [اسم اللعبة]*';
-  try {
-    const downloadLink = await getAPKPureDownloadLink(text);
-    if (!downloadLink) throw 'لم يتم العثور على رابط التحميل.';
-    await conn.sendMessage(m.chat, { text: `رابط التحميل: ${downloadLink}` }, { quoted: m });
-  } catch (error) {
-    await conn.sendMessage(m.chat, { text: `*[😒] خطأ: ${error.message}.*` }, { quoted: m });
-  }
-};
-
-handler.help = ['apk'];
-handler.tags = ['games'];
-handler.command = ['apk'];
-
+handler.help = ["apk"]
+handler.tags = ["applications"]
+handler.command = ["apk"] 
 export default handler;
