@@ -410,7 +410,6 @@ ${readMore}
 ┣ ඬ⃟ 🔊 _tio que rico_
 ┣ ඬ⃟ 🔊 _Viernes_
 ┣ ඬ⃟ 🔊 _Baneado_
-┣ ඬ⃟ 🔊 _Sexo_
 ┣ ඬ⃟ 🔊 _Hola_
 ┣ ඬ⃟ 🔊 _Un pato_
 ┣ ඬ⃟ 🔊 _Nyanpasu_
@@ -574,7 +573,9 @@ ${readMore}
 ┣ ඬ⃟ 👑 _${usedPrefix}setppbot *<responder a imagen>*_
 ┣ ඬ⃟ 👑 _${usedPrefix}addcmd *<texto> <responder a sticker/imagen>*_
 ┣ ඬ⃟ 👑 _${usedPrefix}delcmd *<responder a sticker/imagen con comando o texto asignado>*_
-┗━━━━━━━━━━━━━━━━┛`.trim()
+┗━━━━━━━━━━━━━━━━┛
+instagram https://www.instagram.com/ibrahim_9zz__
+youtube https://www.youtube.com/watch?v=OhxYbmPuLAE&t=4s`.trim()
 if (m.isGroup) {
 //await conn.sendFile(m.chat, vn, 'menu.mp3', null, m, true, { type: 'audioMessage', ptt: true})
 let fkontak2 = { "key": { "participants":"0@s.whatsapp.net", "remoteJid": "status@broadcast", "fromMe": false, "id": "Halo" }, "message": { "contactMessage": { "vcard": `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD` }}, "participant": "0@s.whatsapp.net" }  
